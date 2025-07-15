@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>KSBA Live Departures</title></head>
+<script src="https://unpkg.com/react/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/react-split-flap-effect"></script>
+<body style="background:#111;color:#fff;">
+  <div id="root"></div>
+  <script>
+    const { useState, useEffect } = React;
+    const { FlapDisplay, Presets } = window['react-split-flap-effect'];
+
+    function App() {
+      const [flights, setFlights] = useState([
+        'LOADING DATA...'
+      ]);
+
+      async function fetchData() {
+        try {
+          const res = await fetch('https://api.aviationstack.com/v1/flights?access_key= cac6462551972ac7102f5a014a587d34&dep_iata=SBA');
+          const json = await res.json();
+          const lines = json.data.slice(0,4).map(f =>
+            `${f.airline.iata}${f.flight.number} ${f.departure.scheduled.slice(11,16)}→${f.arrival.iata}${f.arrival.terminal||''} ${f.flight_status.toUpperCase()}`
+          );
+          setFlights(lines);
+        } catch(e) {
+          setFlights(['ERROR FETCHING','CHECK KEY/NETWORK']);
+        }
+      }
+
+      useEffect(() => {
+        fetchData();
+        const id = setInterval(fetchData, 60000);
+        return () => clearInterval(id);
+      }, []);
+
+      return React.createElement('div', {}, 
+        flights.map((line,i) => 
+          React.createElement(FlapDisplay, {
+            key: i,
+            value: line.padEnd(30),
+            chars: Presets.ALPHANUM + ' →',
+            length: 30,
+            style:{margin:'10px auto', background:'#222'}
+          })
+        )
+      );
+    }
+
+    ReactDOM.render(React.createElement(App), document.getElementById('root'));
+  </script>
+</body>
+</html>
